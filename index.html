@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Timer Respiration · Marc Peresson</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;800&display=swap');
+  :root {
+    --orange: #FF6B2B; --orange-l: #FFE4D6;
+    --blue: #2B7FFF; --green: #27AE60;
+    --dark: #1A1A2E; --cream: #FFFDF5;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Nunito',sans-serif; background:var(--cream);
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; overflow:hidden;
+  }
+  .bg-bubble { position:fixed; border-radius:50%; opacity:0.07; animation:float 8s ease-in-out infinite; }
+  .bg-bubble:nth-child(1){width:300px;height:300px;background:var(--orange);top:-80px;left:-80px;animation-delay:0s;}
+  .bg-bubble:nth-child(2){width:200px;height:200px;background:var(--blue);bottom:-60px;right:-60px;animation-delay:2s;}
+  .bg-bubble:nth-child(3){width:150px;height:150px;background:var(--green);top:50%;left:-50px;animation-delay:4s;}
+  @keyframes float{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-20px) scale(1.05);}}
+  .container{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px;max-width:420px;width:100%;}
+  .header{text-align:center;}
+  .header .tag{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--orange);margin-bottom:6px;}
+  .header h1{font-family:'Baloo 2',cursive;font-size:2rem;font-weight:800;color:var(--dark);line-height:1.1;}
+  .header h1 span{color:var(--orange);}
+  .header p{font-size:13px;color:#6B7280;margin-top:4px;font-weight:600;}
+  .circle-wrapper{position:relative;width:250px;height:250px;}
+  .circle-svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .circle-track{fill:none;stroke:#F3F4F6;stroke-width:12;}
+  .circle-progress{fill:none;stroke:var(--orange);stroke-width:12;stroke-linecap:round;stroke-dasharray:691;stroke-dashoffset:691;transition:stroke-dashoffset 0.1s linear,stroke 0.4s ease;}
+  .circle-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+  .phase-emoji{font-size:2.8rem;line-height:1;animation:pulse-emoji 1s ease-in-out infinite;}
+  @keyframes pulse-emoji{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+  .phase-label{font-family:'Baloo 2',cursive;font-size:1.3rem;font-weight:800;color:var(--dark);}
+  .phase-count{font-size:3rem;font-weight:900;color:var(--orange);line-height:1;transition:color 0.4s ease;}
+  .phase-sub{font-size:11px;color:#9CA3AF;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+  .breath-ring{position:absolute;inset:-20px;border-radius:50%;border:3px solid var(--orange);opacity:0;pointer-events:none;}
+  .breath-ring.expand{animation:ring-expand 4s linear forwards;}
+  .breath-ring.hold{opacity:0.3;}
+  .breath-ring.shrink{animation:ring-shrink 4s linear forwards;}
+  @keyframes ring-expand{0%{transform:scale(0.85);opacity:0.6;}100%{transform:scale(1.15);opacity:0;}}
+  @keyframes ring-shrink{0%{transform:scale(1.15);opacity:0.6;}100%{transform:scale(0.85);opacity:0;}}
+  .phases-strip{display:flex;gap:8px;width:100%;}
+  .phase-pill{flex:1;background:white;border-radius:12px;padding:10px 6px;text-align:center;border:2px solid #F3F4F6;transition:all 0.3s ease;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+  .phase-pill.active{border-color:var(--orange);background:var(--orange-l);transform:translateY(-2px);box-shadow:0 6px 16px rgba(255,107,43,0.2);}
+  .phase-pill .pill-icon{font-size:1.2rem;margin-bottom:2px;}
+  .phase-pill .pill-name{font-size:9px;font-weight:700;color:var(--dark);text-transform:uppercase;letter-spacing:0.5px;}
+  .phase-pill .pill-sec{font-size:11px;font-weight:900;color:var(--orange);}
+  .rounds-display{display:flex;align-items:center;gap:12px;}
+  .rounds-label{font-size:12px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:1px;}
+  .rounds-dots{display:flex;gap:6px;}
+  .round-dot{width:10px;height:10px;border-radius:50%;background:#E5E7EB;transition:background 0.3s ease,transform 0.3s ease;}
+  .round-dot.done{background:var(--green);transform:scale(1.2);}
+  .round-dot.current{background:var(--orange);transform:scale(1.3);box-shadow:0 0 0 3px rgba(255,107,43,0.2);}
+  .btn-row{display:flex;gap:12px;}
+  .btn{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;border:none;border-radius:16px;cursor:pointer;padding:14px 28px;transition:all 0.2s ease;letter-spacing:0.5px;}
+  .btn-primary{background:var(--orange);color:white;box-shadow:0 6px 20px rgba(255,107,43,0.35);flex:1;}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,107,43,0.45);}
+  .btn-secondary{background:white;color:var(--dark);border:2px solid #E5E7EB;}
+  .btn-secondary:hover{border-color:var(--orange);color:var(--orange);}
+  .rounds-selector{display:flex;align-items:center;gap:10px;background:white;border-radius:14px;padding:10px 16px;border:2px solid #F3F4F6;box-shadow:0 2px 8px rgba(0,0,0,0.04);}
+  .rounds-selector label{font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1px;}
+  .rounds-btn{width:28px;height:28px;border-radius:8px;border:none;background:var(--orange-l);color:var(--orange);font-size:16px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+  .rounds-btn:hover{background:var(--orange);color:white;}
+  .rounds-val{font-size:18px;font-weight:900;color:var(--dark);min-width:24px;text-align:center;}
+  .completed{display:none;flex-direction:column;align-items:center;gap:16px;text-align:center;}
+  .completed.show{display:flex;}
+  .main-view{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;}
+  .main-view.hidden{display:none;}
+  .congrats-emoji{font-size:5rem;animation:bounce 0.6s ease infinite alternate;}
+  @keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-12px);}}
+  .congrats-title{font-family:'Baloo 2',cursive;font-size:1.8rem;font-weight:800;color:var(--dark);}
+  .congrats-title span{color:var(--green);}
+  .congrats-msg{font-size:13px;color:#6B7280;font-weight:600;max-width:280px;line-height:1.6;}
+  .stars{display:flex;gap:8px;font-size:2rem;}
+  .star{animation:star-pop 0.4s ease forwards;opacity:0;transform:scale(0);}
+  .star:nth-child(1){animation-delay:0.1s;}
+  .star:nth-child(2){animation-delay:0.3s;}
+  .star:nth-child(3){animation-delay:0.5s;}
+  @keyframes star-pop{to{opacity:1;transform:scale(1);}}
+  .footer{text-align:center;font-size:10px;color:#D1D5DB;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+  .footer span{color:var(--orange);}
+</style>
+</head>
+<body>
+<div class="bg-bubble"></div>
+<div class="bg-bubble"></div>
+<div class="bg-bubble"></div>
+<div class="container">
+  <div class="header">
+    <p class="tag">Marc Peresson · Préparateur Mental</p>
+    <h1>Ma <span>Respiration</span><br>de Champion</h1>
+    <p>Méthode Box Breathing 4-4-4-4</p>
+  </div>
+  <div class="main-view" id="mainView">
+    <div class="circle-wrapper">
+      <div class="breath-ring" id="breathRing"></div>
+      <svg class="circle-svg" viewBox="0 0 220 220">
+        <circle class="circle-track" cx="110" cy="110" r="95"/>
+        <circle class="circle-progress" id="circleProgress" cx="110" cy="110" r="95"/>
+      </svg>
+      <div class="circle-center">
+        <div class="phase-emoji" id="phaseEmoji">🌬️</div>
+        <div class="phase-label" id="phaseLabel">Prêt ?</div>
+        <div class="phase-count" id="phaseCount">4</div>
+        <div class="phase-sub">secondes</div>
+      </div>
+    </div>
+    <div class="phases-strip">
+      <div class="phase-pill" id="pill-0"><div class="pill-icon">🌬️</div><div class="pill-name">Inspire</div><div class="pill-sec">4s</div></div>
+      <div class="phase-pill" id="pill-1"><div class="pill-icon">🤐</div><div class="pill-name">Bloque</div><div class="pill-sec">4s</div></div>
+      <div class="phase-pill" id="pill-2"><div class="pill-icon">💨</div><div class="pill-name">Expire</div><div class="pill-sec">4s</div></div>
+      <div class="phase-pill" id="pill-3"><div class="pill-icon">😌</div><div class="pill-name">Bloque</div><div class="pill-sec">4s</div></div>
+    </div>
+    <div class="rounds-display">
+      <span class="rounds-label">Cycles :</span>
+      <div class="rounds-dots" id="roundsDots"></div>
+    </div>
+    <div class="rounds-selector">
+      <label>Nombre de cycles</label>
+      <button class="rounds-btn" id="btnMinus">−</button>
+      <div class="rounds-val" id="roundsVal">5</div>
+      <button class="rounds-btn" id="btnPlus">+</button>
+    </div>
+    <div class="btn-row" style="width:100%">
+      <button class="btn btn-secondary" id="btnReset">↺ Reset</button>
+      <button class="btn btn-primary" id="btnStart">▶ Démarrer</button>
+    </div>
+  </div>
+  <div class="completed" id="completedView">
+    <div class="congrats-emoji">🏆</div>
+    <div class="stars"><span class="star">⭐</span><span class="star">⭐</span><span class="star">⭐</span></div>
+    <div class="congrats-title">Bravo <span>Champion !</span></div>
+    <p class="congrats-msg">Tu viens de terminer ta séance de respiration.<br>Ton cerveau est maintenant calme et prêt à performer !</p>
+    <button class="btn btn-primary" id="btnRestart" style="width:100%">🔄 Recommencer</button>
+  </div>
+  <div class="footer"><span>Mon Programme Mental 21 Jours</span> · Marc Peresson</div>
+</div>
+<script>
+  const PHASES=[{label:'Inspire !',emoji:'🌬️',color:'#2B7FFF',ring:'expand'},{label:'Bloque !',emoji:'🤐',color:'#FF6B2B',ring:'hold'},{label:'Expire !',emoji:'💨',color:'#27AE60',ring:'shrink'},{label:'Bloque !',emoji:'😌',color:'#FF6B2B',ring:'hold'}];
+  const CIRC=2*Math.PI*95;
+  const DUR=4;
+  let totalRounds=5,currentRound=0,currentPhase=0,currentSec=DUR,running=false,timer=null;
+  const cp=document.getElementById('circleProgress');
+  const pe=document.getElementById('phaseEmoji');
+  const pl=document.getElementById('phaseLabel');
+  const pc=document.getElementById('phaseCount');
+  const br=document.getElementById('breathRing');
+  const rd=document.getElementById('roundsDots');
+  const rv=document.getElementById('roundsVal');
+  const mv=document.getElementById('mainView');
+  const cv=document.getElementById('completedView');
+  const bs=document.getElementById('btnStart');
+  cp.style.strokeDasharray=CIRC;cp.style.strokeDashoffset=CIRC;
+  function buildDots(){rd.innerHTML='';for(let i=0;i<totalRounds;i++){const d=document.createElement('div');d.className='round-dot'+(i<currentRound?' done':i===currentRound&&running?' current':'');rd.appendChild(d);}}
+  function updateDots(){rd.querySelectorAll('.round-dot').forEach((d,i)=>{d.className='round-dot'+(i<currentRound?' done':i===currentRound&&running?' current':'');});}
+  function setPhase(p){const ph=PHASES[p];pe.textContent=ph.emoji;pl.textContent=ph.label;pc.style.color=ph.color;cp.style.stroke=ph.color;for(let i=0;i<4;i++)document.getElementById('pill-'+i).classList.toggle('active',i===p);br.className='breath-ring';void br.offsetWidth;br.style.borderColor=ph.color;if(ph.ring!=='hold')br.classList.add(ph.ring);else br.style.opacity='0.3';}
+  function updateCircle(s){cp.style.strokeDashoffset=CIRC-(DUR-s)/DUR*CIRC;pc.textContent=s;}
+  function tick(){currentSec--;updateCircle(currentSec);if(currentSec<=0){currentPhase++;if(currentPhase>=4){currentPhase=0;currentRound++;updateDots();if(currentRound>=totalRounds){finish();return;}}currentSec=DUR;setPhase(currentPhase);updateCircle(currentSec);}}
+  function start(){if(running){clearInterval(timer);running=false;bs.textContent='▶ Reprendre';return;}running=true;bs.textContent='⏸ Pause';setPhase(currentPhase);updateCircle(currentSec);updateDots();timer=setInterval(tick,1000);}
+  function reset(){clearInterval(timer);running=false;currentRound=0;currentPhase=0;currentSec=DUR;bs.textContent='▶ Démarrer';pe.textContent='🌬️';pl.textContent='Prêt ?';pc.textContent='4';pc.style.color='#FF6B2B';cp.style.stroke='#FF6B2B';cp.style.strokeDashoffset=CIRC;br.className='breath-ring';for(let i=0;i<4;i++)document.getElementById('pill-'+i).classList.remove('active');updateDots();}
+  function finish(){clearInterval(timer);running=false;mv.classList.add('hidden');cv.classList.add('show');}
+  bs.addEventListener('click',start);
+  document.getElementById('btnReset').addEventListener('click',reset);
+  document.getElementById('btnRestart').addEventListener('click',()=>{cv.classList.remove('show');mv.classList.remove('hidden');reset();});
+  document.getElementById('btnMinus').addEventListener('click',()=>{if(!running&&totalRounds>1){totalRounds--;rv.textContent=totalRounds;buildDots();}});
+  document.getElementById('btnPlus').addEventListener('click',()=>{if(!running&&totalRounds<10){totalRounds++;rv.textContent=totalRounds;buildDots();}});
+  buildDots();
+</script>
+</body>
+</html>
+
